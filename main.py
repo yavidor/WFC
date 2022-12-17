@@ -1,4 +1,6 @@
 import pygame
+
+
 class WFC:
 	def __init__(self, pattern_size, cell_size, data):
 		self.pattern_size = pattern_size
