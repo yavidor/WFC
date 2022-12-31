@@ -36,8 +36,11 @@ def occ(thing):
 
 
 def calculate_entropy(possibilities: list[Cell]):
+	print(len(possibilities))
 	weights = sum(p.occurrences for p in possibilities)
-	entropy = math.log2(weights) - (sum(p.occurrences * math.log2(p.occurrences) for p in possibilities) / weights)
+	print(weights)
+	entropy = math.log(weights, len(possibilities)) - (
+				sum(p.occurrences * math.log(p.occurrences, len(possibilities)) for p in possibilities) / weights)
 	return entropy
 
 
@@ -83,7 +86,7 @@ for i in range(0, int(output_size[0] / 3)):
 		output_cells[-1][-1].extend(patterns_cells)
 
 pixels.close()
-pygame.init()
-print(calculate_entropy([Cell([[1]], 1), Cell([[1]], 1), Cell([[1]], 1)]))
-pygame.image.save(screen, './pics/hello.jpeg')
-pygame.quit()
+# pygame.init()
+print(calculate_entropy(patterns_cells))
+# pygame.image.save(screen, './pics/hello.jpeg')
+# pygame.quit()
