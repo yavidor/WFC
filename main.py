@@ -70,8 +70,8 @@ def add_to_dic(dictionary, key) -> None:
 def find_lowest_entropy(cells: list[list[Cell]]) -> Cell:
 	lowest = cells[0][0]
 	print(lowest)
-	for i in range(len(cells)):
-		for cell in cells[i]:
+	for index in range(len(cells)):
+		for cell in cells[index]:
 			lowest_entropy = calculate_entropy(lowest.patterns)
 			cell_entropy = calculate_entropy(cell.patterns)
 			if (lowest_entropy == cell_entropy and random.random() > 0.5) or cell_entropy < lowest_entropy:
