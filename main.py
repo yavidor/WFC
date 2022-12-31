@@ -1,3 +1,4 @@
+import math
 import pygame
 from pygame import Surface, SurfaceType
 
@@ -20,19 +21,24 @@ class Cell:
 		for cell in data[-1]:
 			self.down_wall.append(cell)
 		self.left_wall = []
-		for i in range(len(data)):
-			self.left_wall.append(data[i][0])
 		self.right_wall = []
-		for i in range(len(data)):
-			self.right_wall.append(data[i][-1])
+		for index in range(len(data)):
+			self.left_wall.append(data[index][0])
+			self.right_wall.append(data[index][-1])
 
 	def __str__(self):
 		return f"data: {self.data}\noccurrences: {self.occurrences}\nUp Wall: {self.up_wall}\nDown Wall: {self.down_wall}\n" \
-	f"Left Wall: {self.left_wall}\nRight Wall: {self.right_wall} "
+		       f"Left Wall: {self.left_wall}\nRight Wall: {self.right_wall}"
 
 
 def occ(thing):
 	return thing.occurrences
+
+
+def calculate_entropy(possibilities: list[Cell]):
+	weights = sum(p.occurrences for p in possibilities)
+	entropy = math.log2(weights) - (sum(p.occurrences * math.log2(p.occurrences) for p in possibilities) / weights)
+	return entropy
 
 
 def add_to_dic(dictionary, key):
@@ -69,16 +75,15 @@ print(patterns_dict)
 for pattern in patterns_raw:
 	patterns_cells.append(Cell(pattern, patterns_dict[str(pattern)]))
 	patterns_cells.sort(key=occ, reverse=True)
-for cell in patterns_cells:
-	print(cell)
+output_cells: list[list[list[Cell]]] = []
+for i in range(0, int(output_size[0] / 3)):
+	output_cells.append([])
+	for j in range(0, int(output_size[1] / 3)):
+		output_cells[-1].append([])
+		output_cells[-1][-1].extend(patterns_cells)
+
 pixels.close()
 pygame.init()
-pygame.display.flip()
-running = True
-while running:
-	for event in pygame.event.get():
-		if event.type == pygame.QUIT:
-			running = False
-
-# Quit Pygame
+print(calculate_entropy([Cell([[1]], 1), Cell([[1]], 1), Cell([[1]], 1)]))
+pygame.image.save(screen, './pics/hello.jpeg')
 pygame.quit()
