@@ -37,6 +37,10 @@ class Cell:
 	patterns: list[Pattern]
 	x: int
 	y: int
+	entropy: float
+	collapsed: bool
+	possibilities: list[Pattern] | None
+	final_pattern: Pattern | None
 
 	def __init__(self, patterns: list[Pattern], x: int, y: int):
 		self.patterns = patterns
@@ -45,19 +49,19 @@ class Cell:
 		self.collapsed = False
 		self.final_pattern = None
 
+	def get_entropy(self) -> float:
+		weights = sum(p.occurrences for p in self.possibilities)
+		entropy = math.log(weights, len(self.possibilities)) - (
+				sum(p.occurrences * math.log(p.occurrences, len(self.possibilities)) for p in
+				    self.possibilities) / weights)
+		return entropy
+
 	def __str__(self):
 		return f"patterns: {self.patterns}\nx: {self.x}\ny: {self.y}"
 
 
 def occ(thing):
 	return thing.occurrences
-
-
-def calculate_entropy(possibilities: list[Pattern]) -> float:
-	weights = sum(p.occurrences for p in possibilities)
-	entropy = math.log(weights, len(possibilities)) - (
-			sum(p.occurrences * math.log(p.occurrences, len(possibilities)) for p in possibilities) / weights)
-	return entropy
 
 
 def add_to_dic(dictionary, key) -> None:
@@ -72,9 +76,9 @@ def find_lowest_entropy(cells: list[list[Cell]]) -> Cell:
 	print(lowest)
 	for index in range(len(cells)):
 		for cell in cells[index]:
-			lowest_entropy = calculate_entropy(lowest.patterns)
-			cell_entropy = calculate_entropy(cell.patterns)
-			if (lowest_entropy == cell_entropy and random.random() > 0.5) or cell_entropy < lowest_entropy:
+			lowest_entropy = lowest.get_entropy()
+			cell_entropy = cell.get_entropy()
+			if (lowest_entropy == cell_entropy and random.random() < 0.9) or cell_entropy < lowest_entropy:
 				lowest = cell
 	return lowest
 
