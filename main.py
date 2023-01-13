@@ -1,32 +1,25 @@
 import math
-import random
+import numpy as np
 import pygame
 from pygame import Surface, SurfaceType
 
 
 class Pattern:
-	data: list[list[int]]
+	data: np.ndarray
 	occurrences: int
-	up_wall: list[int]
-	down_wall: list[int]
-	left_wall: list[int]
-	right_wall: list[int]
-	walls: list[list[int]]
+	up_wall: np.ndarray
+	down_wall: np.ndarray
+	left_wall: np.ndarray
+	right_wall: np.ndarray
+	walls: list[np.ndarray]
 
 	def __init__(self, data: list[list[int]], occurrences: int):
-		self.data = data
+		self.data = np.array(data)
 		self.occurrences = occurrences
-		self.up_wall = []
-		for cell in data[0]:
-			self.up_wall.append(cell)
-		self.down_wall = []
-		for cell in data[-1]:
-			self.down_wall.append(cell)
-		self.left_wall = []
-		self.right_wall = []
-		for index in range(len(data)):
-			self.left_wall.append(data[index][0])
-			self.right_wall.append(data[index][-1])
+		self.up_wall = np.array(data[0])
+		self.down_wall = np.array(data[-1])
+		self.left_wall = np.array([data[i][0] for i in range(len(data))])
+		self.right_wall = np.array([data[i][-1] for i in range(len(data))])
 		self.walls = [self.up_wall, self.down_wall, self.left_wall, self.right_wall]
 
 	def __str__(self):
@@ -60,14 +53,15 @@ class Cell:
 
 	def collapse(self) -> None:
 		self.collapsed = True
-		self.final_pattern = random.choice(self.patterns)
+		pattern_weights = np.array([x.occurrences for x in self.patterns])
+		pattern_weights = pattern_weights / np.sum(pattern_weights)
+		self.final_pattern = np.random.choice(self.patterns, p=pattern_weights)
 		self.patterns = [self.final_pattern]
 
 	def match_wall(self, wall, pos):
 		for temp_pattern in self.patterns:
-			if temp_pattern.walls[pos] != wall:
+			if not np.array_equal(temp_pattern.walls[pos], wall):
 				self.patterns.remove(temp_pattern)
-		print(len(self.patterns), self.y, self.x)
 
 	def __str__(self):
 		return f"patterns: {self.patterns}\ny,x: {(self.y, self.x)}\ncollapsed: {self.collapsed}"
@@ -85,6 +79,7 @@ def add_to_dic(dictionary, key) -> None:
 
 
 def find_lowest_entropy(cells: list[list[Cell]]) -> Cell:
+	cells = np.array(cells)
 	lowest = cells[0][0]
 	for index in range(len(cells)):
 		for cell in cells[index]:
@@ -111,6 +106,19 @@ def get_neighbors(board: list[list[Cell]], pos: tuple[int, int]) -> list[Cell]:
 def propagate(board: list[list[Cell]], origin: Cell):
 	for neighbor in enumerate(get_neighbors(board, (origin.y, origin.x))):
 		neighbor[1].match_wall(origin.final_pattern.walls[neighbor[0]], neighbor[0])
+
+
+def draw_board(pixel_board: pygame.PixelArray, output: list[list[Cell]], size: int):
+	for i in range(0, len(pixel_board), size):
+		for j in range(0, len(pixel_board[0]), size):
+			for k in range(size):
+				for m in range(size):
+					if output[int(i / size)][int(j / size)].collapsed:
+						pixel_board[i + k][j + m] = output[int(i / size)][int(j / size)].final_pattern.data[k][m]
+					else:
+						pixel_board[i + k][j + m] = output[int(i / size)][int(j / size)].patterns[0].data[k][m]
+
+	return pixel_board
 
 
 # Declaring variables
@@ -143,12 +151,15 @@ for i in range(0, int(output_size[0] / cell_size)):
 	for j in range(0, int(output_size[1] / cell_size)):
 		output_cells[-1].append(Cell(patterns_cells[:], i, j))
 
+while find_lowest_entropy(output_cells).collapsed is not True:
+	lowest_one = find_lowest_entropy(output_cells)
+	lowest_one.collapse()
+	propagate(output_cells, lowest_one)
+pygame.init()
+a = draw_board(pygame.PixelArray(screen), output_cells, cell_size)
+surf = a.make_surface()
+a.close()
+screen.blit(surf, (0, 0))
 pixels.close()
-# pygame.init()
-lowest_one = find_lowest_entropy(output_cells)
-lowest_one.collapse()
-print(lowest_one)
-print(find_lowest_entropy(output_cells), "adssada")
-print(propagate(output_cells, lowest_one), "dsfsdfsdgfd")
-# pygame.image.save(screen, './pics/hello.jpeg')
-# pygame.quit()
+pygame.image.save(screen, './pics/hello.jpeg')
+pygame.quit()
