@@ -45,10 +45,9 @@ class Cell:
 	def get_entropy(self) -> float:
 		if self.collapsed:
 			return 1
-		weights = sum(p.occurrences for p in self.patterns)
-		entropy = math.log(weights, len(self.patterns)) - (
-				sum(p.occurrences * math.log(p.occurrences, len(self.patterns)) for p in
-				    self.patterns) / weights)
+		occurrences = np.array([p.occurrences for p in self.patterns])
+		weights = np.sum(occurrences)
+		entropy = np.log(weights) - (np.sum(occurrences * np.log(occurrences)) / weights)
 		return entropy
 
 	def collapse(self) -> None:
