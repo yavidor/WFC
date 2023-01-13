@@ -1,6 +1,5 @@
 import math
 import random
-
 import pygame
 from pygame import Surface, SurfaceType
 
@@ -14,8 +13,8 @@ class Pattern:
 	right_wall: list[int]
 
 	def __init__(self, data: list[list[int]], occurrences: int):
-		self.occurrences = occurrences
 		self.data = data
+		self.occurrences = occurrences
 		self.up_wall = []
 		for cell in data[0]:
 			self.up_wall.append(cell)
@@ -39,7 +38,6 @@ class Cell:
 	y: int
 	entropy: float
 	collapsed: bool
-	possibilities: list[Pattern] | None
 	final_pattern: Pattern | None
 
 	def __init__(self, patterns: list[Pattern], x: int, y: int):
@@ -50,11 +48,16 @@ class Cell:
 		self.final_pattern = None
 
 	def get_entropy(self) -> float:
-		weights = sum(p.occurrences for p in self.possibilities)
-		entropy = math.log(weights, len(self.possibilities)) - (
-				sum(p.occurrences * math.log(p.occurrences, len(self.possibilities)) for p in
-				    self.possibilities) / weights)
+		weights = sum(p.occurrences for p in self.patterns)
+		entropy = math.log(weights, len(self.patterns)) - (
+				sum(p.occurrences * math.log(p.occurrences, len(self.patterns)) for p in
+				    self.patterns) / weights)
 		return entropy
+
+	def collapse(self) -> None:
+		self.collapsed = True
+		self.final_pattern = random.choice(self.patterns)
+		self.patterns = []
 
 	def __str__(self):
 		return f"patterns: {self.patterns}\nx: {self.x}\ny: {self.y}"
@@ -78,15 +81,9 @@ def find_lowest_entropy(cells: list[list[Cell]]) -> Cell:
 		for cell in cells[index]:
 			lowest_entropy = lowest.get_entropy()
 			cell_entropy = cell.get_entropy()
-			if (lowest_entropy == cell_entropy and random.random() < 0.9) or cell_entropy < lowest_entropy:
+			if (lowest_entropy == cell_entropy and random.random() > 0.5) or cell_entropy < lowest_entropy:
 				lowest = cell
 	return lowest
-
-
-def collapse(cell: Cell):
-	cell.collapsed = True
-	cell.final_pattern = random.choice(cell.patterns)
-	cell.patterns = []
 
 
 # Declaring variables
@@ -114,14 +111,13 @@ for pattern in patterns_raw:
 	patterns_cells.append(Pattern(pattern, patterns_dict[str(pattern)]))
 	patterns_cells.sort(key=occ, reverse=True)
 output_cells: list[list[Cell]] = []
-for i in range(0, int(output_size[0] / 3)):
+for i in range(0, int(output_size[0] / cell_size)):
 	output_cells.append([])
-	for j in range(0, int(output_size[1] / 3)):
+	for j in range(0, int(output_size[1] / cell_size)):
 		output_cells[-1].append(Cell(patterns_cells, i, j))
 
 pixels.close()
 # pygame.init()
-print(calculate_entropy(patterns_cells))
 print(find_lowest_entropy(output_cells))
 # pygame.image.save(screen, './pics/hello.jpeg')
 # pygame.quit()
