@@ -36,17 +36,21 @@ class Cell:
 	def get_entropy(self) -> float:
 		if self.collapsed:
 			return 1
-		occurrences = np.array([p.occurrences for p in self.patterns])
-		weights = np.sum(occurrences)
-		entropy = np.log(weights) - (np.sum(occurrences * np.log(occurrences)) / weights)
+		try:
+			occurrences = np.array([p.occurrences for p in self.patterns])
+			weights = np.sum(occurrences)
+			entropy = np.log(weights) - (np.sum(occurrences * np.log(occurrences)) / weights)
+		except Exception as e:
+			print("hello", e)
+			entropy = 100
 		return entropy
 
 	def collapse(self) -> None:
 		self.collapsed = True
-		# pattern_weights = np.array([x.occurrences for x in self.patterns])
-		# pattern_weights = pattern_weights / np.sum(pattern_weights)
-		# self.final_pattern = np.random.choice(self.patterns, p=pattern_weights)
-		self.final_pattern = np.random.choice(self.patterns)
+		pattern_weights = np.array([x.occurrences for x in self.patterns])
+		pattern_weights = pattern_weights / np.sum(pattern_weights)
+		self.final_pattern = np.random.choice(self.patterns, p=pattern_weights)
+		# self.final_pattern = np.random.choice(self.patterns)
 		self.patterns = [self.final_pattern]
 
 	def match_wall(self, wall, pos):
@@ -74,8 +78,11 @@ def find_lowest_entropy(cells: list[list[Cell]]) -> Cell:
 	for index in range(len(cells)):
 		for cell in cells[index]:
 			lowest_entropy = lowest.get_entropy()
-			cell_entropy = cell.get_entropy()
-			if lowest_entropy == cell_entropy or cell_entropy < lowest_entropy:
+			try:
+				cell_entropy = cell.get_entropy()
+			except:
+				cell_entropy = 1000
+			if lowest_entropy == cell_entropy or cell_entropy < lowest_entropy and cell.collapsed is False:
 				lowest = cell
 	return lowest
 
@@ -101,15 +108,17 @@ def propagate(board: list[list[Cell]], origin: Cell):
 def draw_board(pixel_board: pygame.PixelArray, output: list[list[Cell]], size: int):
 	for i_inner in range(0, len(pixel_board), size):
 		for j_inner in range(0, len(pixel_board[0]), size):
-			choice = output[int(i_inner / size)][int(j_inner / size)].patterns[
-				0]  # np.random.choice(output[int(i_inner / size)][int(j_inner / size)].patterns)
+			if output[int(i_inner / size)][int(j_inner / size)].collapsed is True:
+				choice = output[int(i_inner / size)][int(j_inner / size)].final_pattern
+			else:
+				try:
+					choice = output[int(i_inner / size)][int(j_inner / size)].patterns[
+					0]  # np.random.choice(output[int(i_inner / size)][int(j_inner / size)].patterns)
+				except Exception as e:
+					print(e)
 			for k_inner in range(size):
 				for m_inner in range(size):
-					if output[int(i_inner / size)][int(j_inner / size)].collapsed is True:
-						pixel_board[i_inner + k_inner][j_inner + m_inner] = int(
-							output[int(i_inner / size)][int(j_inner / size)].final_pattern.data[k_inner][m_inner])
-					else:
-						pixel_board[i_inner + k_inner][j_inner + m_inner] = int(choice.data[k_inner][m_inner])
+					pixel_board[i_inner + k_inner][j_inner + m_inner] = int(choice.data[k_inner][m_inner])
 
 	return pixel_board
 
@@ -126,8 +135,8 @@ patterns_cells: list[Pattern] = []
 patterns_dict = {}
 pixels: pygame.PixelArray = pygame.PixelArray(input_image)
 # Creating the patterns
-for i in range(0, input_size[0] - cell_size, cell_size):
-	for j in range(0, input_size[1] - cell_size, cell_size):
+for i in range(0, input_size[0] - cell_size):
+	for j in range(0, input_size[1] - cell_size):
 		patterns_raw.append([])
 		for k in range(0, cell_size):
 			patterns_raw[-1].append([])
@@ -136,7 +145,7 @@ for i in range(0, input_size[0] - cell_size, cell_size):
 		add_to_dic(patterns_dict, patterns_raw[-1])
 patterns_raw = [element for index, element in enumerate(patterns_raw) if element not in patterns_raw[:index]]
 for pattern in patterns_raw:
-	patterns_cells.append(Pattern(pattern, patterns_dict[str(pattern)]))
+	patterns_cells.append(Pattern(np.array(pattern), patterns_dict[str(pattern)]))
 	patterns_cells.sort(key=occ, reverse=True)
 output_cells: list[list[Cell]] = []
 for i in range(0, int(output_size[0] / cell_size)):
@@ -144,10 +153,13 @@ for i in range(0, int(output_size[0] / cell_size)):
 	for j in range(0, int(output_size[1] / cell_size)):
 		output_cells[-1].append(Cell(patterns_cells[:], i, j))
 
-for i in range(1000):
-	lowest_one = find_lowest_entropy(output_cells)
-	lowest_one.collapse()
-	propagate(output_cells, lowest_one)
+for i in range(2000):
+	try:
+		lowest_one = find_lowest_entropy(output_cells)
+		lowest_one.collapse()
+		propagate(output_cells, lowest_one)
+	except:
+		break
 pygame.init()
 a = draw_board(pygame.PixelArray(screen), output_cells, cell_size)
 surf = a.make_surface()
