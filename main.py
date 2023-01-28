@@ -56,7 +56,7 @@ class Cell:
 
 	def match_wall(self, wall, pos):
 		self.patterns = [temp_pattern for temp_pattern in self.patterns if
-		                 jaccard_similarity(temp_pattern.walls[pos], wall)>0.33]
+		                 jaccard_similarity(temp_pattern.walls[pos], wall) > 0.66]
 
 	def __str__(self):
 		return f"patterns: {self.patterns}\ny,x: {(self.y, self.x)}\ncollapsed: {self.collapsed}"
@@ -107,9 +107,6 @@ def get_neighbors(board: list[list[Cell]], pos: tuple[int, int]) -> list[tuple[C
 	return ret
 
 
-# def propagate(board: list[list[Cell]], origin: Cell):
-# 	for neighbor in enumerate(get_neighbors(board, (origin.y, origin.x))):
-# 		neighbor[1].match_wall(origin.final_pattern.walls[neighbor[0]], neighbor[0])
 def propagate(board: list[list[Cell]], pos: tuple[int, int]) -> None:
 	collapsed_cell = board[pos[0]][pos[1]]
 	if collapsed_cell.collapsed is False:
@@ -170,7 +167,7 @@ for i in range(0, int(output_size[0] / cell_size)):
 		output_cells[-1].append(Cell(patterns_cells[:], i, j))
 
 counter = 0
-while not output_cells[0][0].collapsed and counter < 500:
+while not output_cells[0][0].collapsed and counter < 5000:
 	counter += 1
 	lowest_one = find_lowest_entropy(output_cells)
 	lowest_one.collapse()
