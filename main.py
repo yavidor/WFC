@@ -34,29 +34,32 @@ class Cell:
 
 	def get_entropy(self) -> float:
 		if self.collapsed:
-			return 1
-		try:
-			occurrences = np.array([p.occurrences for p in self.patterns])
-			weights = np.sum(occurrences)
-			if weights == 0:
-				return 100
-			entropy = np.log(weights) - (np.sum(occurrences * np.log(occurrences)) / weights)
-		except Exception as e:
-			print("hello", e)
-			entropy = 100
+			return 100
+		occurrences = np.array([p.occurrences for p in self.patterns])
+		weights = np.sum(occurrences)
+		if weights == 0:
+			return 100
+		entropy = np.log(weights) - (np.sum(occurrences * np.log(occurrences)) / weights)
 		return entropy
 
 	def collapse(self) -> None:
 		self.collapsed = True
-		pattern_weights = np.array([x.occurrences for x in self.patterns])
-		pattern_weights = pattern_weights / np.sum(pattern_weights)
-		self.final_pattern = np.random.choice(self.patterns, p=pattern_weights)
-		# self.final_pattern = np.random.choice(self.patterns)
+		try:
+			pattern_weights = np.array([x.occurrences for x in self.patterns])
+			pattern_weights = pattern_weights / np.sum(pattern_weights)
+			self.final_pattern = np.random.choice(self.patterns, p=pattern_weights)
+		except Exception as e:
+			print(e, "hello")
+			self.final_pattern = Pattern(np.array([
+				[0, 0, 0],
+				[0, 0, 0],
+				[0, 0, 0]
+			]), 3)
 		self.patterns = [self.final_pattern]
 
 	def match_wall(self, wall, pos):
 		self.patterns = [temp_pattern for temp_pattern in self.patterns if
-		                 jaccard_similarity(temp_pattern.walls[pos], wall) > 0.66]
+		                 jaccard_similarity(temp_pattern.walls[pos], wall) > 0.33]
 
 	def __str__(self):
 		return f"patterns: {self.patterns}\ny,x: {(self.y, self.x)}\ncollapsed: {self.collapsed}"
@@ -64,8 +67,8 @@ class Cell:
 
 def jaccard_similarity(wall_a, wall_b):
 	# convert to set
-	wall_a = set(wall_a)
-	wall_b = set(wall_b)
+	wall_a = set([(index, element) for index, element in enumerate(wall_a)])
+	wall_b = set([(index, element) for index, element in enumerate(wall_b)])
 	# calculate jaccard similarity
 	jaccard = float(len(wall_a.intersection(wall_b))) / len(wall_a.union(wall_b))
 	return jaccard
@@ -122,13 +125,13 @@ def draw_board(pixel_board: pygame.PixelArray, output: list[list[Cell]], size: i
 			if output[int(i_inner / size)][int(j_inner / size)].collapsed is True:
 				choice = output[int(i_inner / size)][int(j_inner / size)].final_pattern
 			else:
-				try:
-					choice = output[int(i_inner / size)][int(j_inner / size)].patterns[0]
-				# choice = np.random.choice(output[int(i_inner / size)][int(j_inner / size)].patterns)
-				except Exception as e:
-					print(e, (output[int(i_inner / size)][int(j_inner / size)].y,
-					          output[int(i_inner / size)][int(j_inner / size)].x), "hello")
-					print("______________________")
+				print("basa")
+				choice = Pattern(np.array([
+				[0, 0, 0],
+				[0, 0, 0],
+				[0, 0, 0]
+			]), 3)#output[int(i_inner / size)][int(j_inner / size)].patterns[0]
+			# choice = np.random.choice(output[int(i_inner / size)][int(j_inner / size)].patterns)
 			for k_inner in range(size):
 				for m_inner in range(size):
 					pixel_board[i_inner + k_inner][j_inner + m_inner] = int(choice.data[k_inner][m_inner])
@@ -167,11 +170,14 @@ for i in range(0, int(output_size[0] / cell_size)):
 		output_cells[-1].append(Cell(patterns_cells[:], i, j))
 
 counter = 0
-while not output_cells[0][0].collapsed and counter < 5000:
+while find_lowest_entropy(output_cells).get_entropy() <= 100 and counter < 1600:
+	if counter % 50 == 0:
+		print(counter)
 	counter += 1
 	lowest_one = find_lowest_entropy(output_cells)
 	lowest_one.collapse()
 	propagate(output_cells, (lowest_one.y, lowest_one.x))
+print(counter)
 pygame.init()
 a = draw_board(pygame.PixelArray(screen), output_cells, cell_size)
 surf = a.make_surface()
