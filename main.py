@@ -1,4 +1,3 @@
-import math
 import numpy as np
 import pygame
 from pygame import Surface, SurfaceType
@@ -39,6 +38,8 @@ class Cell:
 		try:
 			occurrences = np.array([p.occurrences for p in self.patterns])
 			weights = np.sum(occurrences)
+			if weights == 0:
+				return 100
 			entropy = np.log(weights) - (np.sum(occurrences * np.log(occurrences)) / weights)
 		except Exception as e:
 			print("hello", e)
@@ -78,45 +79,50 @@ def find_lowest_entropy(cells: list[list[Cell]]) -> Cell:
 	for index in range(len(cells)):
 		for cell in cells[index]:
 			lowest_entropy = lowest.get_entropy()
-			try:
-				cell_entropy = cell.get_entropy()
-			except:
-				cell_entropy = 1000
+			cell_entropy = cell.get_entropy()
 			if lowest_entropy == cell_entropy or cell_entropy < lowest_entropy and cell.collapsed is False:
 				lowest = cell
 	return lowest
 
 
-def get_neighbors(board: list[list[Cell]], pos: tuple[int, int]) -> list[Cell]:
-	ret: list[Cell] = []
+def get_neighbors(board: list[list[Cell]], pos: tuple[int, int]) -> list[tuple[Cell, int]]:
+	ret: list[tuple[Cell, int]] = []
 	if pos[0] > 0:
-		ret.append(board[pos[0] - 1][pos[1]])
+		ret.append((board[pos[0] - 1][pos[1]], 0))
 	if pos[0] < len(board) - 1:
-		ret.append(board[pos[0] + 1][pos[1]])
+		ret.append((board[pos[0] + 1][pos[1]], 1))
 	if pos[1] > 0:
-		ret.append(board[pos[0]][pos[1] - 1])
+		ret.append((board[pos[0]][pos[1] - 1], 2))
 	if pos[1] < len(board[0]) - 1:
-		ret.append(board[pos[0]][pos[1] + 1])
+		ret.append((board[pos[0]][pos[1] + 1], 3))
 	return ret
 
 
-def propagate(board: list[list[Cell]], origin: Cell):
-	for neighbor in enumerate(get_neighbors(board, (origin.y, origin.x))):
-		neighbor[1].match_wall(origin.final_pattern.walls[neighbor[0]], neighbor[0])
+# def propagate(board: list[list[Cell]], origin: Cell):
+# 	for neighbor in enumerate(get_neighbors(board, (origin.y, origin.x))):
+# 		neighbor[1].match_wall(origin.final_pattern.walls[neighbor[0]], neighbor[0])
+def propagate(board: list[list[Cell]], pos: tuple[int, int]) -> None:
+	collapsed_cell = board[pos[0]][pos[1]]
+	if collapsed_cell.collapsed is False:
+		return
+	neighbors = get_neighbors(board, pos)
+	for neighbor in neighbors:
+		neighbor[0].match_wall(collapsed_cell.final_pattern.walls[neighbor[1]], neighbor[1])
 
 
 def draw_board(pixel_board: pygame.PixelArray, output: list[list[Cell]], size: int):
 	for i_inner in range(0, len(pixel_board), size):
 		for j_inner in range(0, len(pixel_board[0]), size):
-			if output[int(i_inner / size)][int(j_inner / size)].collapsed is True:
-				choice = output[int(i_inner / size)][int(j_inner / size)].final_pattern
-			else:
-				try:
-					choice = output[int(i_inner / size)][int(j_inner / size)].patterns[
-					0]  # np.random.choice(output[int(i_inner / size)][int(j_inner / size)].patterns)
-				except Exception as e:
-					print(e)
 			for k_inner in range(size):
+				if output[int(i_inner / size)][int(j_inner / size)].collapsed is True:
+					choice = output[int(i_inner / size)][int(j_inner / size)].final_pattern
+				else:
+					try:
+						choice = output[int(i_inner / size)][int(j_inner / size)].patterns[0]
+						# choice = np.random.choice(output[int(i_inner / size)][int(j_inner / size)].patterns)
+					except Exception as e:
+						print(e, get_neighbors(output, (int(i_inner/size), int(j_inner/size)))[0], "hello")
+						print("______________________")
 				for m_inner in range(size):
 					pixel_board[i_inner + k_inner][j_inner + m_inner] = int(choice.data[k_inner][m_inner])
 
@@ -153,14 +159,12 @@ for i in range(0, int(output_size[0] / cell_size)):
 	for j in range(0, int(output_size[1] / cell_size)):
 		output_cells[-1].append(Cell(patterns_cells[:], i, j))
 
-for i in range(2000):
-	try:
-		lowest_one = find_lowest_entropy(output_cells)
-		lowest_one.collapse()
-		propagate(output_cells, lowest_one)
-	except:
-		print("a")
-		break
+counter = 0
+while not output_cells[0][0].collapsed and counter < 200:
+	counter += 1
+	lowest_one = find_lowest_entropy(output_cells)
+	lowest_one.collapse()
+	propagate(output_cells, [lowest_one.y,lowest_one.x])
 pygame.init()
 a = draw_board(pygame.PixelArray(screen), output_cells, cell_size)
 surf = a.make_surface()
