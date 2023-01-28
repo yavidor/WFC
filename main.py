@@ -159,6 +159,7 @@ for i in range(2000):
 		lowest_one.collapse()
 		propagate(output_cells, lowest_one)
 	except:
+		print("a")
 		break
 pygame.init()
 a = draw_board(pygame.PixelArray(screen), output_cells, cell_size)
