@@ -51,9 +51,9 @@ class Cell:
 		except Exception as e:
 			print(e, "hello")
 			self.final_pattern = Pattern(np.array([
-				[0, 0, 0],
-				[0, 0, 0],
-				[0, 0, 0]
+				[16711935, 16711935, 16711935],
+				[16711935, 16711935, 16711935],
+				[16711935, 16711935, 16711935]
 			]), 3)
 		self.patterns = [self.final_pattern]
 
@@ -127,10 +127,10 @@ def draw_board(pixel_board: pygame.PixelArray, output: list[list[Cell]], size: i
 			else:
 				print("basa")
 				choice = Pattern(np.array([
-				[255, 255, 255],
-				[255, 255, 255],
-				[255, 255, 255]
-			]), 3)#output[int(i_inner / size)][int(j_inner / size)].patterns[0]
+					[16711935, 16711935, 16711935],
+					[16711935, 16711935, 16711935],
+					[16711935, 16711935, 16711935]
+				]), 3)  # output[int(i_inner / size)][int(j_inner / size)].patterns[0]
 			# choice = np.random.choice(output[int(i_inner / size)][int(j_inner / size)].patterns)
 			for k_inner in range(size):
 				for m_inner in range(size):
@@ -151,8 +151,8 @@ patterns_cells: list[Pattern] = []
 patterns_dict = {}
 pixels: pygame.PixelArray = pygame.PixelArray(input_image)
 # Creating the patterns
-for i in range(0, input_size[0] - cell_size,cell_size):
-	for j in range(0, input_size[1] - cell_size,cell_size):
+for i in range(0, input_size[0] - cell_size, cell_size):
+	for j in range(0, input_size[1] - cell_size, cell_size):
 		patterns_raw.append([])
 		for k in range(0, cell_size):
 			patterns_raw[-1].append([])
